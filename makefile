@@ -1,4 +1,4 @@
 run:
-	gcc -o array array.c -lpthread
+	gcc -o array array.c -pthread
 	./array
 	rm -f array

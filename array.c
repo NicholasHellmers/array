@@ -21,64 +21,78 @@ interface and an implementation.
 /*
 
 typedef struct {
-    char *buf[ARRAY_SIZE];  // the buffer
-    sem_t mutex;                // mutual exclusion
-    sem_t empty;                // empty
-    sem_t full;                 // full
-    int count;                  // the count of the number of items in the buffer
+    char *buf[ARRAY_SIZE];          // the buffer
+    sem_t mutex = 1;                // mutual exclusion
+    sem_t empty = ARRAY_SIZE;       // empty
+    sem_t full = 0;                 // full
+    int count = 0;                  // number of elements in the buffer
 } array;
 
 */
 
 int array_init(array *s) {                  // initialize the array
-    pthread_mutex_init(&s->mutex, NULL);
-    pthread_cond_init(&s->full, NULL);
-    pthread_cond_init(&s->empty, NULL);
-}
-int array_put (array *s, char *hostname) {  // place element into the array, block when full
-    do {
-        pthread_mutex_lock(&s->mutex);
-        while (s->count == ARRAY_SIZE) {
-            pthread_cond_wait(&s->full, &s->mutex);
-        }
-        s->buf[s->count] = hostname;
-        s->count++;
-        pthread_cond_signal(&s->empty);
-        pthread_mutex_unlock(&s->mutex);
-    } while (0);
-}
-int array_get (array *s, char **hostname) { // remove element from the array, block when empty
-    do {
-        pthread_mutex_lock(&s->mutex);
-        while (s->count == 0) {
-            pthread_cond_wait(&s->empty, &s->mutex);
-        }
-        s->count--;
-        *hostname = s->buf[s->count];
-        pthread_cond_signal(&s->full);
-        pthread_mutex_unlock(&s->mutex);
-    } while (0);
-}
-void array_free(array *s) {                 // free the array's resources
-    pthread_mutex_destroy(&s->mutex);
-    pthread_cond_destroy(&s->full);
-    pthread_cond_destroy(&s->empty);
-}
-
-int main() {
-    array *s = malloc(sizeof(array));
-    array_init(s);
-    array_put(s, "www.google.com");
-    array_put(s, "www.yahoo.com");
-    array_put(s, "www.facebook.com");
-    char *hostname;
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_free(s);
-    free(s);
+    sem_open(&s->mutex, 0, 1);
+    sem_open(&s->empty, 0, ARRAY_SIZE);
+    sem_open(&s->full, 0, 0);
+    s->count = 0;
     return 0;
 }
+int array_put (array *s, char *hostname) {  // place element into the array, block when full
+    while (s->count == ARRAY_SIZE) {
+        sem_wait(&s->full);
+    }
+    sem_wait(&s->mutex);
+    s->buf[s->count] = hostname;
+    s->count++;
+    sem_post(&s->mutex);
+    sem_post(&s->empty);
+    return 0;
+}
+int array_get (array *s, char **hostname) { // remove element from the array, block when empty
+    while (s->count == 0) {
+        sem_wait(&s->empty);
+    }
+    sem_wait(&s->mutex);
+    *hostname = s->buf[s->count];
+    s->count--;
+    sem_post(&s->mutex);
+    sem_post(&s->full);
+    return 0;
+}
+void array_free(array *s) {                 // free the array's resources
+    sem_close(&s->mutex);
+    sem_close(&s->empty);
+    sem_close(&s->full);
+}
+
+// int main() {
+//     array *s;
+//     array_init(s);
+//     array_put(s, "www.google.com");
+//     array_put(s, "www.facebook.com");
+//     array_put(s, "www.twitter.com");
+//     array_put(s, "www.youtube.com");
+//     array_put(s, "www.instagram.com");
+//     array_put(s, "www.reddit.com");
+//     array_put(s, "www.linkedin.com");
+//     array_put(s, "www.pinterest.com");
+//     char *hostname;
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_free(s);
+//     return 0;
+// }
