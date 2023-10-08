@@ -22,10 +22,10 @@ interface and an implementation.
 
 typedef struct {
     char *buf[ARRAY_SIZE];          // the buffer
-    sem_t mutex = 1;                // mutual exclusion
-    sem_t empty = ARRAY_SIZE;       // empty
-    sem_t full = 0;                 // full
-    int count = 0;                  // number of elements in the buffer
+    sem_t mutex;                    // mutual exclusion
+    sem_t empty;                    // empty
+    sem_t full;                     // full
+    int count;                      // number of elements in the buffer
 } array;
 
 */
@@ -65,34 +65,34 @@ void array_free(array *s) {                 // free the array's resources
     sem_close(&s->full);
 }
 
-// int main() {
-//     array *s;
-//     array_init(s);
-//     array_put(s, "www.google.com");
-//     array_put(s, "www.facebook.com");
-//     array_put(s, "www.twitter.com");
-//     array_put(s, "www.youtube.com");
-//     array_put(s, "www.instagram.com");
-//     array_put(s, "www.reddit.com");
-//     array_put(s, "www.linkedin.com");
-//     array_put(s, "www.pinterest.com");
-//     char *hostname;
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_free(s);
-//     return 0;
-// }
+int main() {
+    array *s;
+    array_init(s);
+    array_put(s, "www.google.com");
+    array_put(s, "www.facebook.com");
+    array_put(s, "www.twitter.com");
+    array_put(s, "www.youtube.com");
+    array_put(s, "www.instagram.com");
+    array_put(s, "www.reddit.com");
+    array_put(s, "www.linkedin.com");
+    array_put(s, "www.pinterest.com");
+    char *hostname;
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_get(s, &hostname);
+    printf("%s\n", hostname);
+    array_free(s);
+    return 0;
+}
