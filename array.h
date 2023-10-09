@@ -4,7 +4,7 @@
 #define ARRAY_SIZE 8
 #define MAX_NAME_LENGTH 900
 
-#include <pthread.h>
+// #include <pthread.h>
 #include <semaphore.h>
 
 // Bounded buffer problem
@@ -15,11 +15,12 @@ defined with C macros in your array.h
 */
 typedef struct {
     char *buf[ARRAY_SIZE];          // the buffer
-    sem_t mutex;                    // mutual exclusion
-    sem_t empty;                    // empty
-    sem_t full;                     // full
     int count;                      // number of elements in the buffer
 } array;
+
+pthread_mutex_t mutex;          // mutual exclusion
+sem_t empty;                    // empty
+sem_t full;                     // full
 
 int  array_init(array *s);                   // initialize the array
 int  array_put (array *s, char *hostname);   // place element into the array, block when full

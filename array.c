@@ -16,53 +16,82 @@ This approach is an application of the principal of Separation of Concerns.  In 
 how to build a program as separate C modules, we'll need to review the relationship between an 
 interface and an implementation.
 
+```This is a first in last out approach to the bounded buffer problem.```
+
 */
 
 /*
 
+"array.h"
+
 typedef struct {
     char *buf[ARRAY_SIZE];          // the buffer
-    sem_t mutex;                    // mutual exclusion
-    sem_t empty;                    // empty
-    sem_t full;                     // full
     int count;                      // number of elements in the buffer
 } array;
+
+
+pthread_mutex_t mutex;          // mutual exclusion
+sem_t empty;                    // empty
+sem_t full;                     // full
+
+int  array_init(array *s);                   // initialize the array
+int  array_put (array *s, char *hostname);   // place element into the array, block when full
+int  array_get (array *s, char **hostname);  // remove element from the array, block when empty
+void array_free(array *s);                   // free the array's resources
 
 */
 
 int array_init(array *s) {                  // initialize the array
-    sem_open(&s->mutex, 0, 1);
-    sem_open(&s->empty, 0, ARRAY_SIZE);
-    sem_open(&s->full, 0, 0);
+    pthread_mutex_init(&mutex, NULL);
+    sem_open(&empty, 0, ARRAY_SIZE);
+    sem_open(&full, 0, 0);
     s->count = 0;
     return 0;
 }
 int array_put (array *s, char *hostname) {  // place element into the array, block when full
-    while (s->count == ARRAY_SIZE) {
-        sem_wait(&s->full);
+    while (1) {
+        sem_wait(&empty);
+        pthread_mutex_lock(&mutex);
+        // s->buf[s->count] = hostname;
+        // s->count++;
+        if (s->count < ARRAY_SIZE) {
+            s->buf[s->count] = hostname;
+            s->count++;
+            pthread_mutex_unlock(&mutex);
+            sem_post(&full);
+            return 0;
+        }
+        pthread_mutex_unlock(&mutex);
+        sem_post(&full);
+
+        printf("Put: %s\n", hostname);
     }
-    sem_wait(&s->mutex);
-    s->buf[s->count] = hostname;
-    s->count++;
-    sem_post(&s->mutex);
-    sem_post(&s->empty);
     return 0;
 }
 int array_get (array *s, char **hostname) { // remove element from the array, block when empty
-    while (s->count == 0) {
-        sem_wait(&s->empty);
+    while (1) {
+        sem_wait(&full);
+        pthread_mutex_lock(&mutex);
+        // *hostname = s->buf[s->count];
+        // s->count--;
+        if (s->count > 0) {
+            *hostname = s->buf[s->count - 1];
+            s->count--;
+            pthread_mutex_unlock(&mutex);
+            sem_post(&empty);
+            return 0;
+        }
+        pthread_mutex_unlock(&mutex);
+        sem_post(&empty);
+
+        printf("Got: %s\n", *hostname);
     }
-    sem_wait(&s->mutex);
-    *hostname = s->buf[s->count];
-    s->count--;
-    sem_post(&s->mutex);
-    sem_post(&s->full);
     return 0;
 }
 void array_free(array *s) {                 // free the array's resources
-    sem_close(&s->mutex);
-    sem_close(&s->empty);
-    sem_close(&s->full);
+    sem_close(&empty);
+    sem_close(&full);
+    pthread_mutex_destroy(&mutex);
 }
 
 int main() {
