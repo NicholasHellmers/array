@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <string.h>
 
 #include "array.h"
 
@@ -25,7 +25,7 @@ interface and an implementation.
 "array.h"
 
 typedef struct {
-    char *buf[ARRAY_SIZE];          // the buffer
+    char *buf[ARRAY_SIZE][MAX_NAME_LENGTH];          // the buffer
     int count;                      // number of elements in the buffer
 } array;
 
@@ -43,70 +43,56 @@ void array_free(array *s);                   // free the array's resources
 
 
 int array_init(array *s) {                  // initialize the array
-    pthread_mutex_init(&mutex, NULL);
     sem_init(&empty, 0, ARRAY_SIZE);
     sem_init(&full, 0, 0);
+    pthread_mutex_init(&mutex, NULL);
     s->count = 0;
     return 0;
 }
 int array_put (array *s, char *hostname) {  // place element into the array, block when full
-    while (1) {
+    while(1) {
         sem_wait(&empty);
         pthread_mutex_lock(&mutex);
-        printf("count: %d\n", s->count);
-        s->buf[s->count] = hostname;
+        strcpy(s->buffer[s->count], hostname);
         s->count++;
         pthread_mutex_unlock(&mutex);
         sem_post(&full);
     }
-    return 0;
+    pthread_exit(0);
 }
 int array_get (array *s, char **hostname) { // remove element from the array, block when empty
-    while (1) {
+    while(1) {
         sem_wait(&full);
         pthread_mutex_lock(&mutex);
-        printf("count: %d\n", s->count);
-        *hostname = s->buf[s->count];
         s->count--;
+        strcpy(*hostname, s->buffer[s->count]);
         pthread_mutex_unlock(&mutex);
         sem_post(&empty);
     }
-    return 0;
+    pthread_exit(0);
 }
+    
 void array_free(array *s) {                 // free the array's resources
     sem_destroy(&empty);
     sem_destroy(&full);
     pthread_mutex_destroy(&mutex);
 }
 
-int main() {
-    array *s;
-    array_init(s);
-    array_put(s, "www.google.com");
-    array_put(s, "www.facebook.com");
-    array_put(s, "www.twitter.com");
-    array_put(s, "www.youtube.com");
-    array_put(s, "www.instagram.com");
-    array_put(s, "www.reddit.com");
-    array_put(s, "www.linkedin.com");
-    array_put(s, "www.pinterest.com");
-    char *hostname;
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_get(s, &hostname);
-    printf("%s\n", hostname);
-    array_free(s);
-    return 0;
-}
+// int main() {
+//     array *s;
+//     array_init(s);
+//     array_put(s, "www.google.com");
+//     array_put(s, "www.facebook.com");
+//     array_put(s, "www.twitter.com");
+
+//     char *hostname;
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+//     array_get(s, &hostname);
+//     printf("%s\n", hostname);
+
+//     array_free(s);
+//     return 0;
+// }

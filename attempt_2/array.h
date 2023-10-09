@@ -2,10 +2,9 @@
 #define ARRAY_H
 
 #define ARRAY_SIZE 8
-#define MAX_NAME_LENGTH 20
+#define MAX_NAME_LENGTH 900
 
 #include <pthread.h>
-#include <semaphore.h>
 
 // Bounded buffer problem
 /*
@@ -13,15 +12,14 @@ Essentially, this interface defines a shared array that stores hostnames as C st
 The size of your array and the maximum size string that your array can handle should be 
 defined with C macros in your array.h 
 */
-typedef struct {
+typedef struct
+{
     char *buffer[ARRAY_SIZE][MAX_NAME_LENGTH];          // the buffer
     int count;                      // number of elements in the buffer
 } array;
 
-
-pthread_mutex_t mutex;          // mutual exclusion
-sem_t empty;                    // empty
-sem_t full;                     // full
+pthread_mutex_t M;
+pthread_cond_t DC, DP;
 
 int  array_init(array *s);                   // initialize the array
 int  array_put (array *s, char *hostname);   // place element into the array, block when full
