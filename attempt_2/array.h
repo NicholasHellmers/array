@@ -2,7 +2,7 @@
 #define ARRAY_H
 
 #define ARRAY_SIZE 8
-#define MAX_NAME_LENGTH 900
+#define MAX_NAME_LENGTH 24
 
 #include <pthread.h>
 
@@ -12,10 +12,9 @@ Essentially, this interface defines a shared array that stores hostnames as C st
 The size of your array and the maximum size string that your array can handle should be 
 defined with C macros in your array.h 
 */
-typedef struct
-{
-    char *buffer[ARRAY_SIZE][MAX_NAME_LENGTH];          // the buffer
-    int count;                      // number of elements in the buffer
+typedef struct {
+    char buffer[ARRAY_SIZE][MAX_NAME_LENGTH];           // the buffer
+    int count;                                          // number of elements in the buffer
 } array;
 
 pthread_mutex_t M;

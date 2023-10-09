@@ -30,7 +30,7 @@ int  array_put (array *s, char *hostname) {
     while (s->count == ARRAY_SIZE)		       /* If there is something in the buffer then wait */
         pthread_cond_wait(&DP, &M);
 
-    *s->buffer[s->count] = strcpy(s->buffer[s->count], hostname);
+    strcpy(s->buffer[s->count], hostname);
     s->count++;
     printf("Producer wrote %d\n", hostname);
     pthread_cond_signal(&DC);	/* wake up consumer */
@@ -43,7 +43,7 @@ int  array_get (array *s, char **hostname) {
     while (s->count == 0)			/* If there is nothing in the buffer then wait */
         pthread_cond_wait(&DC, &M);
     s->count--;
-    *hostname = strcpy(s->buffer[s->count]);
+    strcpy(*hostname, s->buffer[s->count]);
     printf("Consumer reads %d\n", hostname);
     pthread_cond_signal(&DP);	/* wake up producer */
     pthread_mutex_unlock(&M);	/* release the buffer */
@@ -56,22 +56,22 @@ void array_free(array *s) {                 // free the array's resources
     pthread_cond_destroy(&DP);	/* Free up producer condition variable */
 }
 
-int main(int argc, char **argv) {
-    pthread_t pro, con;
+// int main(int argc, char **argv) {
+//     pthread_t pro, con;
 
-    array *s;
-    array_init(s);
+//     array *s;
+//     array_init(s);
 
-    // Create the threads
-    pthread_create(&con, NULL, array_get, NULL);
-    pthread_create(&pro, NULL, array_put, NULL);
+//     // Create the threads
+//     pthread_create(&con, NULL, array_get, NULL);
+//     pthread_create(&pro, NULL, array_put, NULL);
 
-    // Wait for the threads to finish
-    // Otherwise main might run to the end
-    // and kill the entire process when it exits.
-    pthread_join(con, NULL);
-    pthread_join(pro, NULL);
+//     // Wait for the threads to finish
+//     // Otherwise main might run to the end
+//     // and kill the entire process when it exits.
+//     pthread_join(con, NULL);
+//     pthread_join(pro, NULL);
 
-    array_free(s);
+//     array_free(s);
 
-}   
+// }   
