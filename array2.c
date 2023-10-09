@@ -1,48 +1,80 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <time.h>
 #include <semaphore.h>
 
-#define NUM_THREADS 3
+#define THREAD_NUM 8
 
-sem_t semaphore;
+sem_t semEmpty;
+sem_t semFull;
 
-void* thread_function(void* thread_id) {
-    int tid = *((int*)thread_id);
-    int sem_value;
-    sem_getvalue(&semaphore, &sem_value);
-    printf("Thread %d is waiting...\n", tid);
-    printf("Thread %d, sem available before acquiring: %d \n", tid, sem_value);
-    sem_wait(&semaphore); // Wait (decrement) the semaphore
-    printf("Thread %d has acquired the semaphore!\n", tid);
-    // Critical section: Access shared resources
-    sem_getvalue(&semaphore, &sem_value);
-    printf("Thread %d, sem available after acquiring: %d \n", tid, sem_value);
-    sleep(20);
-    printf("Thread %d is releasing the semaphore...\n", tid);
-    sem_post(&semaphore); // Signal (increment) the semaphore
-    sem_getvalue(&semaphore, &sem_value);
-    printf("Thread %d, sem available after releasing: %d \n", tid, sem_value);
-    pthread_exit(NULL);
+pthread_mutex_t mutexBuffer;
+
+int buffer[10];
+int count = 0;
+
+void* producer(void* args) {
+    while (1) {
+        // Produce
+        int x = rand() % 100;
+        sleep(1);
+
+        // Add to the buffer
+        sem_wait(&semEmpty);
+        pthread_mutex_lock(&mutexBuffer);
+        buffer[count] = x;
+        count++;
+        pthread_mutex_unlock(&mutexBuffer);
+        sem_post(&semFull);
+    }
 }
 
-int main() {
-    pthread_t threads[NUM_THREADS];
-    int thread_ids[NUM_THREADS];
+void* consumer(void* args) {
+    while (1) {
+        int y;
 
-    //sem_init(&semaphore, 0, 1); // 1 = mutex
-    sem_init(&semaphore, 0, 2); // 1 = mutex
+        // Remove from the buffer
+        sem_wait(&semFull);
+        pthread_mutex_lock(&mutexBuffer);
+        y = buffer[count - 1];
+        count--;
+        pthread_mutex_unlock(&mutexBuffer);
+        sem_post(&semEmpty);
 
-    for (int i = 0; i < NUM_THREADS; ++i) {
-        thread_ids[i] = i;
-        pthread_create(&threads[i], NULL, thread_function, (void*)&thread_ids[i]);
+        // Consume
+        printf("Got %d\n", y);
+        sleep(1);
     }
+}
 
-    for (int i = 0; i < NUM_THREADS; ++i) {
-        pthread_join(threads[i], NULL);
+int main(int argc, char* argv[]) {
+    srand(time(NULL));
+    pthread_t th[THREAD_NUM];
+    pthread_mutex_init(&mutexBuffer, NULL);
+    sem_init(&semEmpty, 0, 10);
+    sem_init(&semFull, 0, 0);
+    int i;
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (i > 0) {
+            if (pthread_create(&th[i], NULL, &producer, NULL) != 0) {
+                perror("Failed to create thread");
+            }
+        } else {
+            if (pthread_create(&th[i], NULL, &consumer, NULL) != 0) {
+                perror("Failed to create thread");
+            }
+        }
     }
-
-    sem_destroy(&semaphore); // Destroy the semaphore
-
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (pthread_join(th[i], NULL) != 0) {
+            perror("Failed to join thread");
+        }
+    }
+    sem_destroy(&semEmpty);
+    sem_destroy(&semFull);
+    pthread_mutex_destroy(&mutexBuffer);
     return 0;
 }
