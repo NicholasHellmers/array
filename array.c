@@ -74,8 +74,8 @@ int array_get (array *s, char **hostname) { // remove element from the array, bl
     return 0;
 }
 void array_free(array *s) {                 // free the array's resources
-    sem_close(&empty);
-    sem_close(&full);
+    sem_destroy(&empty);
+    sem_destroy(&full);
     pthread_mutex_destroy(&mutex);
 }
 

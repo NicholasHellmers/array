@@ -18,7 +18,7 @@ typedef struct {
     int count;                      // number of elements in the buffer
 } array;
 
-pthread_mutex_t mutex;          // mutual exclusion
+sem_t mutex;                    // mutual exclusion
 sem_t empty;                    // empty
 sem_t full;                     // full
 
