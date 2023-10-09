@@ -41,6 +41,7 @@ void array_free(array *s);                   // free the array's resources
 
 */
 
+
 int array_init(array *s) {                  // initialize the array
     pthread_mutex_init(&mutex, NULL);
     sem_open(&empty, 0, ARRAY_SIZE);
@@ -52,19 +53,11 @@ int array_put (array *s, char *hostname) {  // place element into the array, blo
     while (1) {
         sem_wait(&empty);
         pthread_mutex_lock(&mutex);
-        // s->buf[s->count] = hostname;
-        // s->count++;
-        if (s->count < ARRAY_SIZE) {
-            s->buf[s->count] = hostname;
-            s->count++;
-            pthread_mutex_unlock(&mutex);
-            sem_post(&full);
-            return 0;
-        }
+        printf("count: %d\n", s->count);
+        s->buf[s->count] = hostname;
+        s->count++;
         pthread_mutex_unlock(&mutex);
         sem_post(&full);
-
-        printf("Put: %s\n", hostname);
     }
     return 0;
 }
@@ -72,19 +65,11 @@ int array_get (array *s, char **hostname) { // remove element from the array, bl
     while (1) {
         sem_wait(&full);
         pthread_mutex_lock(&mutex);
-        // *hostname = s->buf[s->count];
-        // s->count--;
-        if (s->count > 0) {
-            *hostname = s->buf[s->count - 1];
-            s->count--;
-            pthread_mutex_unlock(&mutex);
-            sem_post(&empty);
-            return 0;
-        }
+        printf("count: %d\n", s->count);
+        *hostname = s->buf[s->count];
+        s->count--;
         pthread_mutex_unlock(&mutex);
         sem_post(&empty);
-
-        printf("Got: %s\n", *hostname);
     }
     return 0;
 }
