@@ -44,8 +44,8 @@ void array_free(array *s);                   // free the array's resources
 
 int array_init(array *s) {                  // initialize the array
     pthread_mutex_init(&mutex, NULL);
-    sem_open(&empty, 0, ARRAY_SIZE);
-    sem_open(&full, 0, 0);
+    sem_init(&empty, 0, ARRAY_SIZE);
+    sem_init(&full, 0, 0);
     s->count = 0;
     return 0;
 }
