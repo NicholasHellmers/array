@@ -4,43 +4,7 @@
 
 #include "array.h"
 
-/*
-
-In this assignment you will build a thread-safe Shared Array, that will then be included in PA6 
-to create a multi-threaded DNS resolver program.  To help you organize your code, we will require 
-you to build a separate C module that deals solely with the shared array.  This modularization will 
-allow you to build and test a shared array abstraction without having to worry about all the 
-details of your PA6 solution. 
-
-This approach is an application of the principal of Separation of Concerns.  In order to illustrate 
-how to build a program as separate C modules, we'll need to review the relationship between an 
-interface and an implementation.
-
-```This is a first in last out approach to the bounded buffer problem.```
-
-*/
-
-/*
-
-"array.h"
-
-typedef struct {
-    char *buf[ARRAY_SIZE][MAX_NAME_LENGTH];          // the buffer
-    int count;                      // number of elements in the buffer
-} array;
-
-
-pthread_mutex_t mutex;          // mutual exclusion
-sem_t empty;                    // empty
-sem_t full;                     // full
-
-int  array_init(array *s);                   // initialize the array
-int  array_put (array *s, char *hostname);   // place element into the array, block when full
-int  array_get (array *s, char **hostname);  // remove element from the array, block when empty
-void array_free(array *s);                   // free the array's resources
-
-*/
-
+#define THREAD_NUM 10
 
 int array_init(array *s) {                  // initialize the array
     sem_init(&empty, 0, ARRAY_SIZE);
@@ -54,6 +18,7 @@ int array_put (array *s, char *hostname) {  // place element into the array, blo
         sem_wait(&empty);
         pthread_mutex_lock(&mutex);
         strcpy(s->buffer[s->count], hostname);
+        printf("PUT: %s\n", s->buffer[s->count]);
         s->count++;
         pthread_mutex_unlock(&mutex);
         sem_post(&full);
@@ -66,6 +31,7 @@ int array_get (array *s, char **hostname) { // remove element from the array, bl
         pthread_mutex_lock(&mutex);
         s->count--;
         strcpy(*hostname, s->buffer[s->count]);
+        printf("GOT: %s\n", *hostname);
         pthread_mutex_unlock(&mutex);
         sem_post(&empty);
     }
@@ -78,21 +44,28 @@ void array_free(array *s) {                 // free the array's resources
     pthread_mutex_destroy(&mutex);
 }
 
-// int main() {
-//     array *s;
-//     array_init(s);
-//     array_put(s, "www.google.com");
-//     array_put(s, "www.facebook.com");
-//     array_put(s, "www.twitter.com");
-
-//     char *hostname;
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-//     array_get(s, &hostname);
-//     printf("%s\n", hostname);
-
-//     array_free(s);
-//     return 0;
-// }
+int main() {
+    srand(time(NULL));
+    pthread_t th[THREAD_NUM];
+    array *s;
+    array_init(s);
+    int i;
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (i > 0) {
+            if (pthread_create(&th[i], NULL, &array_put, NULL) != 0) {
+                perror("Failed to create thread");
+            }
+        } else {
+            if (pthread_create(&th[i], NULL, &array_get, NULL) != 0) {
+                perror("Failed to create thread");
+            }
+        }
+    }
+    for (i = 0; i < THREAD_NUM; i++) {
+        if (pthread_join(th[i], NULL) != 0) {
+            perror("Failed to join thread");
+        }
+    }
+    array_free(s);
+    return 0;
+}

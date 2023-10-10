@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "array.h"
 
 int array_init(array *s) {                  // initialize the array
@@ -24,8 +25,7 @@ int array_init(array *s) {                  // initialize the array
     return 0;
 }
 
-int  array_put (array *s, char *hostname) {
-
+int array_put (array *s, char *hostname) {
     pthread_mutex_lock(&M);	/* protect buffer */
     while (s->count == ARRAY_SIZE)		       /* If there is something in the buffer then wait */
         pthread_cond_wait(&DP, &M);
@@ -38,13 +38,13 @@ int  array_put (array *s, char *hostname) {
     pthread_exit(0);
 }
 
-int  array_get (array *s, char **hostname) {
+int array_get (array *s, char **hostname) {
     pthread_mutex_lock(&M);	/* protect buffer */
     while (s->count == 0)			/* If there is nothing in the buffer then wait */
         pthread_cond_wait(&DC, &M);
     s->count--;
     strcpy(*hostname, s->buffer[s->count]);
-    printf("Consumer reads %d\n", hostname);
+    printf("Consumer reads %d\n", *hostname);
     pthread_cond_signal(&DP);	/* wake up producer */
     pthread_mutex_unlock(&M);	/* release the buffer */
     pthread_exit(0);

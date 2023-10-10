@@ -14,10 +14,9 @@ The size of your array and the maximum size string that your array can handle sh
 defined with C macros in your array.h 
 */
 typedef struct {
-    char *buffer[ARRAY_SIZE][MAX_NAME_LENGTH];          // the buffer
-    int count;                      // number of elements in the buffer
+    char buffer[ARRAY_SIZE][MAX_NAME_LENGTH];           // the buffer
+    int count;                                          // number of elements in the buffer
 } array;
-
 
 pthread_mutex_t mutex;          // mutual exclusion
 sem_t empty;                    // empty
