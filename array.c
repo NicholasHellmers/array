@@ -45,7 +45,6 @@ void array_free(array *s) {                 // free the array's resources
 }
 
 int main() {
-    srand(time(NULL));
     pthread_t th[THREAD_NUM];
     array *s;
     array_init(s);
