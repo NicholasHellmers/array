@@ -19,6 +19,8 @@ int main() {
     std::cout << test5 << std::endl;
     char test6 = shift_char('a', -1);
     std::cout << test6 << std::endl;
+    char test7 = shift_char('a', -27);
+    std::cout << test7 << std::endl;
 
     return 0;
 }
