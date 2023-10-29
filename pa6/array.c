@@ -55,23 +55,3 @@ void array_free(array *s) {                 // free the array's resources
     pthread_cond_destroy(&DC);	/* Free up consumer condition variable */
     pthread_cond_destroy(&DP);	/* Free up producer condition variable */
 }
-
-// int main(int argc, char **argv) {
-//     pthread_t pro, con;
-
-//     array *s;
-//     array_init(s);
-
-//     // Create the threads
-//     pthread_create(&con, NULL, array_get, NULL);
-//     pthread_create(&pro, NULL, array_put, NULL);
-
-//     // Wait for the threads to finish
-//     // Otherwise main might run to the end
-//     // and kill the entire process when it exits.
-//     pthread_join(con, NULL);
-//     pthread_join(pro, NULL);
-
-//     array_free(s);
-
-// }   
