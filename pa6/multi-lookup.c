@@ -4,44 +4,44 @@
 
 void* requesterThread(void* inputfile) {
     
-    Requester *data = (Requester *) inputfile;          //cast void pointer to Requesters struct
-    unsigned long tid = (unsigned long) pthread_self(); //thread id
-    int count = 0;                                      //local count of the number of files serviced, independent for each requester
+    Requester *data = (Requester *) inputfile;
+    unsigned long tid = (unsigned long) pthread_self();
+    int count = 0;
 
     while(1) {
-        pthread_mutex_lock(&(data->file_position_lock)); 
+        pthread_mutex_lock(&(data->fp_lock)); 
 
-        if( data->idx >= data->file_count) { //if all files have been processed //data->file_count<=0
-            pthread_mutex_unlock(&(data->file_position_lock));
+        if( data->idx >= data->file_count) {
+            pthread_mutex_unlock(&(data->fp_lock));
             printf("thread %lu serviced %d files\n", tid, count);
             fflush(stderr);
             return NULL;
         }
         
-        pthread_mutex_unlock(&(data->file_position_lock)); //locking file index
-        pthread_mutex_lock(&(data->file_position_lock)); 
+        pthread_mutex_unlock(&(data->fp_lock));
+        pthread_mutex_lock(&(data->fp_lock)); 
         
         int idx = data->idx;
         data->idx++;
-        pthread_mutex_unlock(&(data->file_position_lock));
+        pthread_mutex_unlock(&(data->fp_lock));
         char *filename;
         filename = data->input_files[idx];
-        FILE * fd = fopen(filename, "r+"); //only one thread should read into temp, other threadds should read other files
+        FILE * fd = fopen(filename, "r+");
 
         if (fd != NULL) {
             char hostname[MAX_NAME_LENGTH];
             while ( fgets(hostname, sizeof(hostname), fd) ) {
                 // printf("%s\n", hostname);
-                if (hostname[0] != '\n') {
+                // if (hostname[0] != '\n') {
                     hostname[strlen(hostname)-1]='\0';
                     array_put(data->buffer, hostname);
-                    pthread_mutex_lock(&(data->serviced_lock));
-                    fprintf(data->serviced_log, "%s\n", hostname);
+                    pthread_mutex_lock(&(data->s_lock));
+                    fprintf(data->s_log, "%s\n", hostname);
                     fflush(stderr);
-                    pthread_mutex_unlock(&(data->serviced_lock));
-                }
+                    pthread_mutex_unlock(&(data->s_lock));
+                // }
             }
-            fclose(fd); //every thread will close its file after reading it
+            fclose(fd);
             count++;
 
         } else {
@@ -96,16 +96,16 @@ void* resolverThread(void* outputfile) {
 
         // if not poison pill, then resolve the hostname
         if ( dnslookup(name, IP, MAX_IP_LENGTH) == 0 ) {    // Valid hostname
-            pthread_mutex_lock(&(data->results_lock)); 
-            fprintf(data->results_log, "%s, %s\n", name, IP);
+            pthread_mutex_lock(&(data->r_lock)); 
+            fprintf(data->r_log, "%s, %s\n", name, IP);
             fflush(stderr);
-            pthread_mutex_unlock(&(data->results_lock));
+            pthread_mutex_unlock(&(data->r_lock));
             count++;
         } else {                                            // Invalid hostname
-            pthread_mutex_lock(&(data->results_lock)); 
-            fprintf(data->results_log, "%s, %s\n", name, NOT_RESOLVED);
+            pthread_mutex_lock(&(data->r_lock)); 
+            fprintf(data->r_log, "%s, %s\n", name, NOT_RESOLVED);
             fflush(stderr);
-            pthread_mutex_unlock(&(data->results_lock));
+            pthread_mutex_unlock(&(data->r_lock));
         }
     }
     return NULL;
@@ -143,24 +143,24 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    printf("User wants %d requesters and %d resolvers\n", num_requesters, num_resolvers);
-
     char *file_list[argc-5]; //length of file array is amount in /input
 
     // Allocate memory for file_list
     for(int i=0; i<argc-5; i++){
         file_list[i] = malloc (sizeof(char) * MAX_NAME_LENGTH );
-
     }
 
     // Check if file exists
     for(int i = 5; i < argc; i++) {
         if (access(argv[i], F_OK) != 0) {
             printf("invalid file %s\n", argv[i]);
+            return -1;
         } else {
             strcpy(file_list[i-5], argv[i]);
         }
     }
+
+    printf("User wants %d requesters and %d resolvers\n", num_requesters, num_resolvers);
 
     array buffer;
     
@@ -178,26 +178,26 @@ int main(int argc, char* argv[]) {
     
     requester_args.idx = 0;
     
-    pthread_mutex_init((&requester_args.file_position_lock), 0); 
-    pthread_mutex_init((&requester_args.serviced_lock), 0) ;
+    pthread_mutex_init((&requester_args.fp_lock), 0); 
+    pthread_mutex_init((&requester_args.s_lock), 0) ;
 
     requester_args.buffer = &buffer;
-    requester_args.serviced_log = fopen(argv[3], "w+");
+    requester_args.s_log = fopen(argv[3], "w+");
     int fdreq = access(argv[3], F_OK | W_OK);
 
     
-    if(requester_args.serviced_log == NULL || fdreq!=0){
+    if(requester_args.s_log == NULL || fdreq!=0){
         printf("Error: Could not open requester_log file\n");
         return -1;
     }
     
-    pthread_mutex_init((&resolver_args.results_lock), 0); 
+    pthread_mutex_init((&resolver_args.r_lock), 0); 
     
     resolver_args.buffer = &buffer;
-    resolver_args.results_log = fopen(argv[4], "w+");
+    resolver_args.r_log = fopen(argv[4], "w+");
     int fdres = access(argv[4], F_OK | W_OK);
 
-    if(resolver_args.results_log == NULL || fdres != 0){
+    if(resolver_args.r_log == NULL || fdres != 0){
         printf("Error: Could not open resolver_log file\n");
         return -1;
     }
@@ -241,9 +241,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    pthread_mutex_destroy(&(requester_args.file_position_lock));
-    pthread_mutex_destroy(&(requester_args.serviced_lock));
-    pthread_mutex_destroy(&(resolver_args.results_lock));
+    pthread_mutex_destroy(&(requester_args.fp_lock));
+    pthread_mutex_destroy(&(requester_args.s_lock));
+    pthread_mutex_destroy(&(resolver_args.r_lock));
     
     for(int i = 0; i < argc - 5; i++){
         free(file_list[i]);
@@ -251,8 +251,8 @@ int main(int argc, char* argv[]) {
 
     array_free(&buffer);
 
-    fclose(requester_args.serviced_log);
-    fclose(resolver_args.results_log);
+    fclose(requester_args.s_log);
+    fclose(resolver_args.r_log);
     
     gettimeofday(&end, NULL);
     float time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
