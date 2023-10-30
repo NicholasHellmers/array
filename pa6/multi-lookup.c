@@ -14,7 +14,7 @@ void* requesterThread(void* inputfile) {
         if( data->idx >= data->file_count) {
             pthread_mutex_unlock(&(data->fp_lock));
             printf("thread %lu serviced %d files\n", tid, count);
-            fflush(stderr);
+            // fflush(stderr);
             return NULL;
         }
         
@@ -26,7 +26,7 @@ void* requesterThread(void* inputfile) {
         pthread_mutex_unlock(&(data->fp_lock));
         char *filename;
         filename = data->input_files[idx];
-        FILE * fd = fopen(filename, "r+");
+        FILE * fd = fopen(filename, "r");
 
         if (fd != NULL) {
             char hostname[MAX_NAME_LENGTH];
@@ -37,17 +37,17 @@ void* requesterThread(void* inputfile) {
                     array_put(data->buffer, hostname);
                     pthread_mutex_lock(&(data->s_lock));
                     fprintf(data->s_log, "%s\n", hostname);
-                    fflush(stderr);
+                    // fflush(stderr);
                     pthread_mutex_unlock(&(data->s_lock));
                 // }
             }
             fclose(fd);
             count++;
 
-        } else {
-            fflush(stderr);
-            continue;
-        }
+        } // else {
+            // fflush(stderr);
+            // continue;
+        // }
 
     }
 
@@ -88,7 +88,7 @@ void* resolverThread(void* outputfile) {
             gettimeofday(&end, NULL);
             float time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
             printf("Thread %lx resolved %d hostnames in %f seconds\n", tid, count, time);
-            fflush(stderr);
+            // fflush(stderr);
             free(name);
             free(IP);
             return NULL;
@@ -96,15 +96,15 @@ void* resolverThread(void* outputfile) {
 
         // if not poison pill, then resolve the hostname
         if ( dnslookup(name, IP, MAX_IP_LENGTH) == 0 ) {    // Valid hostname
-            pthread_mutex_lock(&(data->r_lock)); 
+            pthread_mutex_lock(&(data->r_lock));
             fprintf(data->r_log, "%s, %s\n", name, IP);
-            fflush(stderr);
+            // fflush(stderr);
             pthread_mutex_unlock(&(data->r_lock));
             count++;
         } else {                                            // Invalid hostname
             pthread_mutex_lock(&(data->r_lock)); 
             fprintf(data->r_log, "%s, %s\n", name, NOT_RESOLVED);
-            fflush(stderr);
+            // fflush(stderr);
             pthread_mutex_unlock(&(data->r_lock));
         }
     }
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
 
     // Check if file exists
     for(int i = 5; i < argc; i++) {
-        if (access(argv[i], F_OK) != 0) {
+        if (access(argv[i], F_OK | R_OK) != 0) {
             printf("invalid file %s\n", argv[i]);
             return -1;
         } else {
@@ -180,10 +180,11 @@ int main(int argc, char* argv[]) {
     pthread_mutex_init((&requester_args.s_lock), 0) ;
 
     requester_args.buffer = &buffer;
-    requester_args.s_log = fopen(argv[3], "w+");
+    requester_args.s_log = fopen(argv[3], "w");
+    
     int fdreq = access(argv[3], F_OK | W_OK);
     
-    if(requester_args.s_log == NULL || fdreq!=0){
+    if (requester_args.s_log == NULL || fdreq != 0) {
         printf("Error: Could not open requester_log file\n");
         return -1;
     }
@@ -191,7 +192,7 @@ int main(int argc, char* argv[]) {
     pthread_mutex_init((&resolver_args.r_lock), 0); 
     
     resolver_args.buffer = &buffer;
-    resolver_args.r_log = fopen(argv[4], "w+");
+    resolver_args.r_log = fopen(argv[4], "w");
     int fdres = access(argv[4], F_OK | W_OK);
 
     if(resolver_args.r_log == NULL || fdres != 0){
