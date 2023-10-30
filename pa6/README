@@ -1,0 +1,3 @@
+This is the PA6 submission of Nicholas Hellmers Davalos.
+
+To execute, run "make" in the terminal and then, run the command of the form "multi-lookup <# requester> <# resolver> <requester log> <resolver log> [ <data file> ... ]".
