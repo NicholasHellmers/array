@@ -33,6 +33,7 @@ int dnslookup(const char* hostname, char* firstIPstr, int maxSize){
     /* Lookup Hostname */
     addrError = getaddrinfo(hostname, NULL, NULL, &headresult);
     if(addrError){
+	// printf("Invalid Hostname: %s\n", hostname);
 	fprintf(stderr, "Error looking up Address: %s\n",
 		gai_strerror(addrError));
 	return UTIL_FAILURE;

@@ -18,42 +18,42 @@
 #include "array.h"
 
 int array_init(array *s) {                      // initialize the array
-    pthread_mutex_init(&M, NULL);       
-    pthread_cond_init(&DC, NULL);               /* Initialize consumer condition variable */
-    pthread_cond_init(&DP, NULL);               /* Initialize producer condition variable */
+    pthread_mutex_init(&s->M, NULL);       
+    pthread_cond_init(&s->DC, NULL);               /* Initialize consumer condition variable */
+    pthread_cond_init(&s->DP, NULL);               /* Initialize producer condition variable */
     s->count = 0;
     return 0;
 }
 
 void* array_put (array *s, char *hostname) {
-    pthread_mutex_lock(&M);	                    /* protect buffer */
+    pthread_mutex_lock(&s->M);	                    /* protect buffer */
     while (s->count == ARRAY_SIZE)		        /* If there is something in the buffer then wait */
-        pthread_cond_wait(&DP, &M);
+        pthread_cond_wait(&s->DP, &s->M);
 
     strcpy(s->buffer[s->count], hostname);
     s->count++;
-    printf("Producer wrote %s\n", hostname);
-    pthread_cond_signal(&DC);	                /* wake up consumer */
-    pthread_mutex_unlock(&M);	                /* release the buffer */
+    // printf("Producer wrote %s\n", hostname);
+    pthread_cond_signal(&s->DC);	                /* wake up consumer */
+    pthread_mutex_unlock(&s->M);	                /* release the buffer */
     // pthread_exit(0);
     return NULL;
 }
 
 void* array_get (array *s, char **hostname) {
-    pthread_mutex_lock(&M);	                    /* protect buffer */
+    pthread_mutex_lock(&s->M);	                    /* protect buffer */
     while (s->count == 0)			            /* If there is nothing in the buffer then wait */
-        pthread_cond_wait(&DC, &M);
+        pthread_cond_wait(&s->DC, &s->M);
     s->count--;
     strcpy(*hostname, s->buffer[s->count]);
-    printf("Consumer reads %s\n", *hostname);
-    pthread_cond_signal(&DP);	                /* wake up producer */
-    pthread_mutex_unlock(&M);	                /* release the buffer */
+    // printf("Consumer reads %s\n", *hostname);
+    pthread_cond_signal(&s->DP);	                /* wake up producer */
+    pthread_mutex_unlock(&s->M);	                /* release the buffer */
     // pthread_exit(0);
     return NULL;
 }
 
-void array_free() {                     // free the array's resources
-    pthread_mutex_destroy(&M);	                /* Free up M mutex */
-    pthread_cond_destroy(&DC);	                /* Free up consumer condition variable */
-    pthread_cond_destroy(&DP);	                /* Free up producer condition variable */
+void array_free(array *s) {                     // free the array's resources
+    pthread_mutex_destroy(&s->M);	                /* Free up M mutex */
+    pthread_cond_destroy(&s->DC);	                /* Free up consumer condition variable */
+    pthread_cond_destroy(&s->DP);	                /* Free up producer condition variable */
 }

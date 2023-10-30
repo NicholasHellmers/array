@@ -12,6 +12,7 @@
 #include<sys/time.h>
 #include<pthread.h>
 
+// PA6 definitions
 #define MAX_INPUT_FILES 100             // Maximum number of hostname file arguments allowed
 #define MAX_REQUESTER_THREADS 10        //- Maximum number of concurrent requester threads allowed
 #define MAX_RESOLVER_THREADS 10         //- Maximum number of concurrent resolver threads allowed
@@ -19,23 +20,23 @@
 
 #define THREAD_NUM MAX_REQUESTER_THREADS + MAX_RESOLVER_THREADS
 
-typedef struct Requesters{
-    char** input_files;                 //shared access to list input files (names)
-    FILE * serviced_log;                //argv[3]
-    pthread_mutex_t file_position_lock; //provide mutual exclusion for writing
-    pthread_mutex_t serviced_lock;      //writing log
-    array * shared_buffer;              //pointer to stack struct
-    int global_index;                   // the key to multithreaded file reads
-    int file_count;                     // argc-5
-} Requesters;
+typedef struct Requester{
+    char** input_files;                 
+    FILE* serviced_log;                
+    pthread_mutex_t file_position_lock; 
+    pthread_mutex_t serviced_lock;      
+    array* buffer;                     
+    int idx;                            
+    int file_count;                     
+} Requester;
 
-typedef struct Resolvers{
-    pthread_mutex_t results_lock;       //provide mutual exclusion for writing to results.txt
-    array * shared_buffer;
-    FILE * results_log;                 //argv[4]
-} Resolvers;
+typedef struct Resolver{
+    pthread_mutex_t results_lock;
+    array* buffer;
+    FILE* results_log;                 
+} Resolver;
 
-void* requesterTread(void* inputfile);
+void* requesterThread(void* inputfile);
 
 void* resolverThread(void* outputfile);
 
