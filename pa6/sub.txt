@@ -1,0 +1,8 @@
+./multi-lookup with no arguments: returned failure: 100 
+./multi-lookup with bogus input file: 0 0 
+./multi-lookup with 1 requester, 1 resolver and 1 file: 0 0 
+./multi-lookup with 1 requester, 1 resolver and 10 files: 0 0 
+./multi-lookup with 1 requester, 5 resolvers and 10 files: 0 0 
+./multi-lookup with 5 requesters, 1 resolver and 10 files: 0 0 
+./multi-lookup with 5 requesters, 5 resolvers and 10 files: 0 0 
+./multi-lookup with 10 requesters, 10 resolvers and 30 files: 0 0 multi-threaded speedup: 0.002 / 0.003 * 200 = 133 use of clone(), futex() and sleep(): 19, 48, 0: 500 0 500 memory leaks: 0 bytes in 0 blocks: 500 instructions used: 290386: 0 global variables used: 0: 500 compilation warnings: 0: 500 total: 2733

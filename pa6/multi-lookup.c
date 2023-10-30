@@ -68,14 +68,14 @@ void* resolverThread(void* outputfile) {
     
     if(name == NULL){
         printf("Invalid hostname\n. Exiting\n");
-        exit(-1);
+        // exit(-1);
     }
 
     char * IP = malloc(MAX_IP_LENGTH);
 
     if(IP == NULL){
         printf("Invalid IP address\n. Exiting\n");
-        exit(-1);
+        // exit(-1);
     }
     
     int count = 0;
@@ -160,8 +160,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    printf("User wants %d requesters and %d resolvers\n", num_requesters, num_resolvers);
-
     array buffer;
     
     array_init(&buffer);
@@ -184,7 +182,6 @@ int main(int argc, char* argv[]) {
     requester_args.buffer = &buffer;
     requester_args.s_log = fopen(argv[3], "w+");
     int fdreq = access(argv[3], F_OK | W_OK);
-
     
     if(requester_args.s_log == NULL || fdreq!=0){
         printf("Error: Could not open requester_log file\n");
