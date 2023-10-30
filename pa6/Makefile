@@ -35,8 +35,3 @@ submit:
 	echo; echo Bundling the following files for submission; \
 	tar --transform "s|^|PA6-$$username/|" -cvf PA6-$$username.txt $(SUBMITFILES); \
 	echo; echo Please upload the file PA6-$$username.txt to Canvas to complete your submission; echo
-
-test: #run for 100 times the same script
-	@for i in {1..100}; do \
-		./multi-lookup 10 10 serviced.txt resolved.txt input/names*.txt; \
-	done

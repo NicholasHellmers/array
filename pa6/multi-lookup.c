@@ -14,7 +14,7 @@ void* requesterThread(void* inputfile) {
         if( data->idx >= data->file_count) {
             pthread_mutex_unlock(&(data->fp_lock));
             printf("thread %lu serviced %d files\n", tid, count);
-            // fflush(stderr);
+            fflush(stderr);
             return NULL;
         }
         
@@ -31,23 +31,20 @@ void* requesterThread(void* inputfile) {
         if (fd != NULL) {
             char hostname[MAX_NAME_LENGTH];
             while ( fgets(hostname, sizeof(hostname), fd) ) {
-                // printf("%s\n", hostname);
-                // if (hostname[0] != '\n') {
-                    hostname[strlen(hostname)-1]='\0';
-                    array_put(data->buffer, hostname);
-                    pthread_mutex_lock(&(data->s_lock));
-                    fprintf(data->s_log, "%s\n", hostname);
-                    // fflush(stderr);
-                    pthread_mutex_unlock(&(data->s_lock));
-                // }
+                hostname[strlen(hostname)-1]='\0';
+                array_put(data->buffer, hostname);
+                pthread_mutex_lock(&(data->s_lock));
+                fprintf(data->s_log, "%s\n", hostname);
+                fflush(stderr);
+                pthread_mutex_unlock(&(data->s_lock));
             }
             fclose(fd);
             count++;
 
-        } // else {
-            // fflush(stderr);
-            // continue;
-        // }
+        } else {
+            fflush(stderr);
+            continue;
+        }
 
     }
 
@@ -66,16 +63,16 @@ void* resolverThread(void* outputfile) {
     unsigned long tid = (unsigned long) pthread_self();
     char * name = malloc(MAX_NAME_LENGTH);
     
-    if(name == NULL){
+    if (name == NULL) {
         printf("Invalid hostname\n. Exiting\n");
-        // exit(-1);
+        exit(-1);
     }
 
     char * IP = malloc(MAX_IP_LENGTH);
 
-    if(IP == NULL){
+    if (IP == NULL) {
         printf("Invalid IP address\n. Exiting\n");
-        // exit(-1);
+        exit(-1);
     }
     
     int count = 0;
@@ -88,7 +85,7 @@ void* resolverThread(void* outputfile) {
             gettimeofday(&end, NULL);
             float time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
             printf("Thread %lx resolved %d hostnames in %f seconds\n", tid, count, time);
-            // fflush(stderr);
+            fflush(stderr);
             free(name);
             free(IP);
             return NULL;
@@ -98,13 +95,13 @@ void* resolverThread(void* outputfile) {
         if ( dnslookup(name, IP, MAX_IP_LENGTH) == 0 ) {    // Valid hostname
             pthread_mutex_lock(&(data->r_lock));
             fprintf(data->r_log, "%s, %s\n", name, IP);
-            // fflush(stderr);
+            fflush(stderr);
             pthread_mutex_unlock(&(data->r_lock));
             count++;
         } else {                                            // Invalid hostname
             pthread_mutex_lock(&(data->r_lock)); 
             fprintf(data->r_log, "%s, %s\n", name, NOT_RESOLVED);
-            // fflush(stderr);
+            fflush(stderr);
             pthread_mutex_unlock(&(data->r_lock));
         }
     }
@@ -120,17 +117,17 @@ int main(int argc, char* argv[]) {
     
     gettimeofday(&start, NULL);
     
-    if(argc < 6){
+    if(argc < 6) {
         printf("Error: Not enough arguments\n");
         return -1;
     }
     
-    if(argc>MAX_INPUT_FILES + 5){
+    if(argc > MAX_INPUT_FILES + 5) {
         printf("Error: Too many arguments\n");
         return -1;
     }
     
-    if(strlen(argv[1]) > 2 || strlen(argv[2]) > 2){
+    if(strlen(argv[1]) > 2 || strlen(argv[2]) > 2) {
         printf("Error: User entered non integer requester or resolver\n");
         return -1;
     }
@@ -138,16 +135,16 @@ int main(int argc, char* argv[]) {
     int num_requesters = atoi(argv[1]);
     int num_resolvers = atoi(argv[2]);
     
-    if(num_requesters < 1 || num_resolvers < 1 || num_requesters > 10 || num_resolvers > 10) {
+    if(num_requesters < 1 || num_resolvers < 1 || num_requesters > MAX_REQUESTER_THREADS || num_resolvers > MAX_RESOLVER_THREADS) {
         printf("Error: Invalid thread request\n");
         return -1;
     }
 
-    char *file_list[argc-5]; //length of file array is amount in /input
+    char *file_list[argc - 5]; //length of file array is amount in /input
 
     // Allocate memory for file_list
-    for(int i=0; i<argc-5; i++){
-        file_list[i] = malloc (sizeof(char) * MAX_NAME_LENGTH );
+    for(int i = 0; i < argc - 5; i++) {
+        file_list[i] = malloc (MAX_NAME_LENGTH );
     }
 
     // Check if file exists
@@ -202,7 +199,7 @@ int main(int argc, char* argv[]) {
 
     // Thread Creation
     // Case 1: fail to create requester thread
-    for(int i = 0; i < num_requesters; i++){
+    for(int i = 0; i < num_requesters; i++) {
     
         if(pthread_create(&requesters_id[i], NULL, requesterThread, &requester_args) != 0){
     
@@ -213,14 +210,14 @@ int main(int argc, char* argv[]) {
     }
 
     // Case 2: fail to create resolver thread
-    for(int i = 0; i < num_resolvers; i++){
+    for(int i = 0; i < num_resolvers; i++) {
         if(pthread_create(&resolvers_id[i], NULL, resolverThread, &resolver_args) != 0){
             printf("Failed to create resolver thread\n");
         }
     }
 
     // Case 3: fail to join requester thread
-    for(int i = 0; i < num_requesters; i++){
+    for(int i = 0; i < num_requesters; i++) {
         if(pthread_join(requesters_id[i], NULL) != 0){
             printf("Failed to join requester\n");
         }
@@ -243,7 +240,7 @@ int main(int argc, char* argv[]) {
     pthread_mutex_destroy(&(requester_args.s_lock));
     pthread_mutex_destroy(&(resolver_args.r_lock));
     
-    for(int i = 0; i < argc - 5; i++){
+    for(int i = 0; i < argc - 5; i++) {
         free(file_list[i]);
     }
 
