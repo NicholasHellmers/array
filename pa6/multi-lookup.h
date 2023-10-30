@@ -27,13 +27,13 @@ typedef struct Requesters{
     array * shared_buffer;              //pointer to stack struct
     int global_index;                   // the key to multithreaded file reads
     int file_count;                     // argc-5
-}Requesters;
+} Requesters;
 
 typedef struct Resolvers{
     pthread_mutex_t results_lock;       //provide mutual exclusion for writing to results.txt
     array * shared_buffer;
     FILE * results_log;                 //argv[4]
-}Resolvers;
+} Resolvers;
 
 void* requesterTread(void* inputfile);
 

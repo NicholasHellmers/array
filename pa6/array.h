@@ -21,8 +21,8 @@ pthread_mutex_t M;
 pthread_cond_t DC, DP;
 
 int  array_init(array *s);                              // initialize the array
-int  array_put (array *s, char *hostname);              // place element into the array, block when full
-int  array_get (array *s, char **hostname);             // remove element from the array, block when empty
-void array_free(array *s);                              // free the array's resources
+void* array_put (array *s, char *hostname);              // place element into the array, block when full
+void*  array_get (array *s, char **hostname);             // remove element from the array, block when empty
+void array_free();                                      // free the array's resources
 
 #endif

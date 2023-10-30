@@ -12,88 +12,50 @@ void* requesterTread(void* inputfile) {
 
     /* *************Local Vars************ */
 
-    unsigned long tid = pthread_self();
+    unsigned long tid = pthread_self(); //thread id
 
     int count = 0; //local count of the number of files serviced, independent for each requester
 
-    int idx = -1; //used by every thread
-
-    while(1){
-
-        /*************Critical Section****************/
-    
+    while(1) {
         pthread_mutex_lock(&(data->file_position_lock)); 
-        
-        if( data->global_index>= data->file_count){ //if all files have been processed //data->file_count<=0
-        
+
+        if( data->global_index >= data->file_count) { //if all files have been processed //data->file_count<=0
             pthread_mutex_unlock(&(data->file_position_lock));
-        
-            printf("Thread %lx serviced %d files\n", tid, count);
-        
             fflush(stderr);
-        
             return NULL;
-        
         }
         
-        pthread_mutex_unlock(&(data->file_position_lock)); //locking file index  
-
-        /*************Critical Section************** */
-        
+        pthread_mutex_unlock(&(data->file_position_lock)); //locking file index
         pthread_mutex_lock(&(data->file_position_lock)); 
         
         int idx = data->global_index;
-        
         data->global_index++;
-        
         pthread_mutex_unlock(&(data->file_position_lock));
-        
-        /***************************************************/
-       
         char *filename;
-
         filename = data->input_files[idx];
-
         printf("thread %lu got file %s\n",tid, filename);
-
         FILE * fd = fopen(filename, "r+"); //only one thread should read into temp, other threadds should read other files
 
-        //check if  file was successful
-        if (fd != NULL){
+        if (fd != NULL) {
             char hostname[MAX_NAME_LENGTH];
-            while ( fgets(hostname, sizeof(hostname), fd) ){
+            while ( fgets(hostname, sizeof(hostname), fd) ) {
                 printf("%s\n", hostname);
-                if(hostname[0] != '\n'){
-                    
+                if (hostname[0] != '\n') {
                     hostname[strlen(hostname)-1]='\0';
-                    
-                    /*****************BOUNDED BUFFER************************/
-                    
                     array_put(data->shared_buffer, hostname);
-                    
-                    /***************** Critical Section ********************/
-                    
                     pthread_mutex_lock(&(data->serviced_lock));
-
-                    fprintf(data->serviced_log, "%s\n", hostname);
-
                     fflush(stderr);
-
                     pthread_mutex_unlock(&(data->serviced_lock));
-
                 }
-                
             }
 
             fclose(fd); //every thread will close its file after reading it
 
             count++;
+
         } else {
-            
             fflush(stderr);
-            
             continue;
-        
         }
 
     }
@@ -157,8 +119,7 @@ void* resolverThread(void* outputfile) {
         }
 
     
-        /* POSION PILL */
-    
+        // PP Pattern
         printf("word: %s\n", name);
     
         if(strcmp(name, "PEACE OUT")==0){
@@ -286,7 +247,7 @@ int main(int argc, char* argv[]) {
 
             printf("invalid file %s\n", argv[i]);
 
-        }else{
+        } else {
 
             strcpy(file_list[i-5], argv[i]);
 
@@ -297,11 +258,8 @@ int main(int argc, char* argv[]) {
     
     //printing file list
     
-    for(int i=0; i<argc-5; i++){
-    
+    for(int i = 0; i < argc - 5; i++)
         printf("%s\n", file_list[i]);
-    
-    }
 
     
     array buffer;
@@ -371,9 +329,7 @@ int main(int argc, char* argv[]) {
     
     }
 
-    
-
-//**********************Create Threads*****************************///
+    // Thread Creation
     // Case 1: fail to create requester thread
     for(int i = 0; i < num_requesters; i++){
     
@@ -421,7 +377,7 @@ int main(int argc, char* argv[]) {
         free(file_list[i]);
     }
 
-    array_free(&buffer);
+    array_free();
 
     fclose(requester_args.serviced_log);
     fclose(resolver_args.results_log);
